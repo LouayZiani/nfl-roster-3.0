@@ -1,6 +1,6 @@
+
 import { Link } from 'react-router-dom';
-import { fetchStats } from '../services/service';
-import useAsync from '../hooks/useAsync';
+import { useStats } from '../hooks/usePlayers';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
 const shortcuts = [
@@ -13,7 +13,8 @@ const shortcuts = [
 
 function Home() {
   useDocumentTitle('');
-  const { status, data } = useAsync(() => fetchStats({}), []);
+
+  const { data, isSuccess } = useStats({});
 
   return (
     <>
@@ -24,15 +25,26 @@ function Home() {
             A roster browser for real NFL players. Look someone up, open a team, compare two players, or check the
             numbers behind the league. Built for Chiefs Kingdom, that is why it's themed RED!!
           </p>
-          {status === 'success' && data.total > 0 && (
-            <p className="hero-count">{data.total} players on {data.teams} teams</p>
+
+          {isSuccess && data.total > 0 && (
+            <p className="hero-count">
+              {data.total} players on {data.teams} teams
+            </p>
           )}
+
           <div className="hero-actions">
             <Link className="btn" to="/players">Browse players</Link>
-            <Link className="btn btn-plain" to="/teams/kansas-city-chiefs">Visit the Chiefs</Link>
+            <Link className="btn btn-plain" to="/teams/kansas-city-chiefs">
+              Visit the Chiefs
+            </Link>
           </div>
         </div>
-        <img className="hero-image" src={`${import.meta.env.BASE_URL}chiefs-bg.jpg`} alt="Patrick Mahomes in a Kansas City Chiefs uniform" />
+
+        <img
+          className="hero-image"
+          src={`${import.meta.env.BASE_URL}chiefs-bg.jpg`}
+          alt="Patrick Mahomes in a Kansas City Chiefs uniform"
+        />
       </section>
 
       <ul className="grid shortcuts">

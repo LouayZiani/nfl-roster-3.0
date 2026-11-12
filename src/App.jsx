@@ -5,8 +5,11 @@ import Home from './pages/Home';
 import PlayersPage from './pages/PlayersPage';
 import AddPlayer from './pages/AddPlayer';
 import NotFound from './pages/NotFound';
+//
+import ProtectedRoute from './components/ProtectedRoute';
 
-// Lazy-loaded pages: each one becomes its own JS chunk, downloaded the first time it is visited.
+
+//lazy-loaded pages
 const About = lazy(() => import('./pages/About'));
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -15,6 +18,10 @@ const Teams = lazy(() => import('./pages/Teams'));
 const TeamDetail = lazy(() => import('./pages/TeamDetail'));
 const Compare = lazy(() => import('./pages/Compare'));
 const RandomPlayer = lazy(() => import('./pages/RandomPlayer'));
+
+//new lazy imports
+const Signup = lazy(() => import('./pages/Signup'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 function App() {
   return (
@@ -27,8 +34,14 @@ function App() {
           <Route path="new" element={<AddPlayer />} />
           <Route path=":id" element={<PlayerDetail />} />
         </Route>
-        <Route path="dashboard" element={<Dashboard />} />
         <Route path="login" element={<Login />} />
+        <Route path="signup" element={<Signup />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="profile" element={<Profile />} />
+        </Route>
+
+        <Route path="dashboard" element={<Dashboard />} />
 
         {/* these are the bonus routes i added: teams, teamDetail, Compare, randomPlayer, and the gif customized 404*/}
         <Route path="teams">

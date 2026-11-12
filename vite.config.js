@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/nfl-roster-2.0/',
-})
+  base: '/nfl-roster-3.0/',
+});

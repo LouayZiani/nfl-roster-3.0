@@ -1,7 +1,7 @@
+
 import { Link, useSearchParams } from 'react-router-dom';
-import { fetchStats } from '../services/service';
+import { useStats } from '../hooks/usePlayers';
 import { TEAMS, POSITIONS } from '../constants';
-import useAsync from '../hooks/useAsync';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import StatCard from '../components/StatCard';
 import BarList from '../components/BarList';
@@ -9,34 +9,56 @@ import StatusMessage from '../components/StatusMessage';
 
 function playersLink({ team, position }) {
   const qs = new URLSearchParams();
+
   if (team) qs.set('team', team);
   if (position) qs.set('position', position);
+
   const text = qs.toString();
   return text ? `/players?${text}` : '/players';
 }
 
 function Dashboard() {
   useDocumentTitle('Dashboard');
+
   const [params, setParams] = useSearchParams();
   const team = params.get('team') ?? '';
   const position = params.get('position') ?? '';
-  const { status, data, error, retry } = useAsync(() => fetchStats({ team, position }), [team, position]);
+
+  const { data, error, isPending, isError, refetch } = useStats({
+    team,
+    position,
+  });
 
   function setFilter(key, value) {
     const next = new URLSearchParams(params);
+
     if (value) next.set(key, value);
     else next.delete(key);
+
     setParams(next);
   }
 
   let content;
-  if (status === 'loading') {
+
+  if (isPending) {
     content = <StatusMessage type="loading" message="Crunching the numbers..." />;
-  } else if (status === 'error') {
-    content = <StatusMessage type="error" message={error.message} actionLabel="Try again" onAction={retry} />;
+  } else if (isError) {
+    content = (
+      <StatusMessage
+        type="error"
+        message={error.message}
+        actionLabel="Try again"
+        onAction={refetch}
+      />
+    );
   } else if (data.total === 0) {
     content = (
-      <StatusMessage type="empty" message="No players match this team and position." actionLabel="Clear filters" onAction={() => setParams({})} />
+      <StatusMessage
+        type="empty"
+        message="No players match this team and position."
+        actionLabel="Clear filters"
+        onAction={() => setParams({})}
+      />
     );
   } else {
     content = (
@@ -53,12 +75,20 @@ function Dashboard() {
         <div className="breakdowns">
           <BarList
             title="By position"
-            items={data.byPosition.map((r) => ({ ...r, to: playersLink({ team, position: r.position }) }))}
+            items={data.byPosition.map((r) => ({
+              ...r,
+              to: playersLink({ team, position: r.position }),
+            }))}
           />
+
           <BarList title="By experience" items={data.byExperience} />
+
           <BarList
             title="Teams with the most players"
-            items={data.byTeam.map((r) => ({ ...r, to: playersLink({ team: r.team, position }) }))}
+            items={data.byTeam.map((r) => ({
+              ...r,
+              to: playersLink({ team: r.team, position }),
+            }))}
           />
         </div>
 
@@ -76,7 +106,9 @@ function Dashboard() {
         </section>
 
         <p>
-          <Link className="btn" to={playersLink({ team, position })}>See these players</Link>
+          <Link className="btn" to={playersLink({ team, position })}>
+            See these players
+          </Link>
         </p>
       </>
     );
@@ -87,6 +119,7 @@ function Dashboard() {
       <div className="toolbar">
         <h1>Dashboard</h1>
       </div>
+
       <div className="filters filters-short">
         <label>
           Team
@@ -97,6 +130,7 @@ function Dashboard() {
             ))}
           </select>
         </label>
+
         <label>
           Position
           <select value={position} onChange={(e) => setFilter('position', e.target.value)}>
@@ -106,8 +140,12 @@ function Dashboard() {
             ))}
           </select>
         </label>
-        <button className="btn btn-plain" onClick={() => setParams({})}>Reset</button>
+
+        <button className="btn btn-plain" onClick={() => setParams({})}>
+          Reset
+        </button>
       </div>
+
       {content}
     </>
   );

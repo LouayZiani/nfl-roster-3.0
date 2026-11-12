@@ -1,24 +1,34 @@
+
 import { Link, Navigate } from 'react-router-dom';
-import { fetchRandomPlayerId } from '../services/service';
-import useAsync from '../hooks/useAsync';
+import { useRandomPlayerId } from '../hooks/usePlayers';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import StatusMessage from '../components/StatusMessage';
 
-// /random asks api for a random id then redirects to that player
+// /random asks the API for a random ID and redirects to that player.
 function RandomPlayer() {
   useDocumentTitle('Surprise me');
-  const { status, data: id, error, retry } = useAsync(fetchRandomPlayerId, []);
 
-  if (status === 'success') return <Navigate to={`/players/${id}`} replace />;
-  if (status === 'error') {
+  const { data: id, error, isPending, isError, refetch } = useRandomPlayerId();
+
+  if (isPending) {
+    return <StatusMessage type="loading" message="Picking a player..." />;
+  }
+
+  if (isError) {
     return (
       <>
-        <StatusMessage type="error" message={error.message} actionLabel="Try again" onAction={retry} />
+        <StatusMessage
+          type="error"
+          message={error.message}
+          actionLabel="Try again"
+          onAction={refetch}
+        />
         <p><Link to="/players">Back to all players</Link></p>
       </>
     );
   }
-  return <StatusMessage type="loading" message="Picking a player..." />;
+
+  return <Navigate to={`/players/${id}`} replace />;
 }
 
 export default RandomPlayer;

@@ -1,42 +1,122 @@
+
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import FormField from '../components/FormField';
+import { useAuth } from '../context/AuthContext';
 
-//its just a placeholder, nothing is sent yet
 function Login() {
   useDocumentTitle('Log in');
+
+  const { login, loginWithGoogle, error, clearError } = useAuth();
+
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [notice, setNotice] = useState('');
+  const location = useLocation();
+
+  const [form, setForm] = useState({
+    email: '',
+    password: '',
+  });
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const redirectTo = location.state?.from?.pathname || '/profile';
 
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    clearError();
+
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setNotice('Accounts are coming soon. For now you can browse as a guest.');
+    setSubmitting(true);
+
+    try {
+      await login(form.email, form.password);
+      navigate(redirectTo, { replace: true });
+    } catch (err) {
+      // Error is already stored in AuthContext.
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setSubmitting(true);
+
+    try {
+      await loginWithGoogle();
+      navigate(redirectTo, { replace: true });
+    } catch (err) {
+      // Error is already stored in AuthContext.
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <div className="login">
       <form className="form login-card" onSubmit={handleSubmit}>
         <h1>Log in</h1>
-        <p className="muted">Save favorite players and build your own depth chart. Coming soon.</p>
+
         <FormField label="Email">
-          <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@example.com" />
+          <input
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder="you@example.com"
+            required
+          />
         </FormField>
+
         <FormField label="Password">
-          <input name="password" type="password" value={form.password} onChange={handleChange} />
+          <input
+            name="password"
+            type="password"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
         </FormField>
-        {notice && <p className="notice" role="status">{notice}</p>}
+
+        {error && (
+          <p className="notice" role="alert">
+            {error}
+          </p>
+        )}
+
         <div className="form-actions">
-          <button className="btn" type="submit">Log in</button>
-          <button className="btn btn-plain" type="button" onClick={() => navigate('/players')}>
+          <button className="btn" type="submit" disabled={submitting}>
+            {submitting ? 'Logging in...' : 'Log in'}
+          </button>
+
+          <button
+            className="btn btn-plain"
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={submitting}
+          >
+            Continue with Google
+          </button>
+
+          <button
+            className="btn btn-plain"
+            type="button"
+            onClick={() => navigate('/players')}
+          >
             Continue as guest
           </button>
         </div>
+
+        <p>
+          Don't have an account? <Link to="/signup">Sign up</Link>
+        </p>
       </form>
     </div>
   );

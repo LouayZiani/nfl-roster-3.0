@@ -1,31 +1,45 @@
+
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { fetchPlayer } from '../services/service';
+
 import { teamSlug } from '../constants';
-import useAsync from '../hooks/useAsync';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import StatusMessage from '../components/StatusMessage';
 import NotFound from './NotFound';
+import { usePlayer } from '../hooks/usePlayers';
 
 function PlayerProfile({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { status, data: player, error, retry } = useAsync(() => fetchPlayer(id), [id]);
+
+  const {
+    data: player,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = usePlayer(id);
+
   const [imageFailed, setImageFailed] = useState(false);
+
   useDocumentTitle(player ? player.name : 'Player');
 
-  //because "default" means this page was opened directly so there is nothing to go back to
   const canGoBack = location.key !== 'default';
+
   const links = (
     <div className="crumbs">
       {canGoBack && (
-        <button className="btn btn-plain" onClick={() => navigate(-1)}>Back</button>
+        <button className="btn btn-plain" onClick={() => navigate(-1)}>
+          Back
+        </button>
       )}
-      <Link className="btn btn-plain" to="/players">All players</Link>
+      <Link className="btn btn-plain" to="/players">
+        All players
+      </Link>
     </div>
   );
 
-  if (status === 'loading') {
+  if (isPending) {
     return (
       <>
         {links}
@@ -33,16 +47,21 @@ function PlayerProfile({ id }) {
       </>
     );
   }
-  if (status === 'error' && error.status === 404) {
-    return (
-      <NotFound />
-    );
+
+  if (isError && error?.status === 404) {
+    return <NotFound />;
   }
-  if (status === 'error') {
+
+  if (isError) {
     return (
       <>
         {links}
-        <StatusMessage type="error" message={error.message} actionLabel="Try again" onAction={retry} />
+        <StatusMessage
+          type="error"
+          message={error.message}
+          actionLabel="Try again"
+          onAction={() => refetch()}
+        />
       </>
     );
   }
@@ -61,8 +80,15 @@ function PlayerProfile({ id }) {
   return (
     <article className="detail">
       {links}
-      {location.state?.notice && <p className="notice" role="status">{location.state.notice}</p>}
+
+      {location.state?.notice && (
+        <p className="notice" role="status">
+          {location.state.notice}
+        </p>
+      )}
+
       <h1>{player.name}</h1>
+
       <div className="detail-body">
         <div>
           <dl>
@@ -73,11 +99,18 @@ function PlayerProfile({ id }) {
               </div>
             ))}
           </dl>
+
           <div className="detail-actions">
-            <Link className="btn" to={`/compare?a=${player.id}`}>Compare with another player</Link>
-            <Link className="btn btn-plain" to={`/teams/${teamSlug(player.team)}`}>More from {player.team}</Link>
+            <Link className="btn" to={`/compare?a=${player.id}`}>
+              Compare with another player
+            </Link>
+
+            <Link className="btn btn-plain" to={`/teams/${teamSlug(player.team)}`}>
+              More from {player.team}
+            </Link>
           </div>
         </div>
+
         {player.headshot && !imageFailed ? (
           <img
             className="photo"
@@ -96,7 +129,7 @@ function PlayerProfile({ id }) {
 
 function PlayerDetail() {
   const { id } = useParams();
-  //key={id}: moving from one player to anther starts with fresh state (image error flag, loading)
+
   return <PlayerProfile key={id} id={id} />;
 }
 
